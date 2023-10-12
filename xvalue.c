@@ -156,3 +156,97 @@ int xvalue_set_uint(xvalue_t *_value, unsigned int _val) {
     _value->value._uint = _val;
     return 0;
 }
+
+int xvalue_set_string(
+        xvalue_t *_value, const char *_val,
+        unsigned int _length) {
+    if (_value == NULL) {
+        return -1;
+    }
+    if (_value->type == VALUE_TYPE_INVALID) {
+        _value->type = VALUE_TYPE_STRING;
+    }
+    if (_value->type != VALUE_TYPE_STRING) {
+        return -2;
+    }
+    mmsstr_set_data(&_value->value._string, _val, _length);
+    return 0;
+}
+
+int xvalue_set_bitstr(
+        xvalue_t *_value, const char *_val,
+        unsigned int _length) {
+    if (_value == NULL) {
+        return -1;
+    }
+    if (_value->type == VALUE_TYPE_INVALID) {
+        _value->type = VALUE_TYPE_BITS;
+    }
+    if (_value->type != VALUE_TYPE_BITS) {
+        return -2;
+    }
+    mmsstr_set_data(&_value->value._string, _val, _length);
+    return 0;
+}
+
+int xvalue_set_octstr(
+        xvalue_t *_value, const char *_val,
+        unsigned int _length) {
+    if (_value == NULL) {
+        return -1;
+    }
+    if (_value->type == VALUE_TYPE_INVALID) {
+        _value->type = VALUE_TYPE_OCTSTR;
+    }
+    if (_value->type != VALUE_TYPE_OCTSTR) {
+        return -2;
+    }
+    mmsstr_set_data(&_value->value._string, _val, _length);
+    return 0;
+}
+
+int xvalue_set_bintime(
+        xvalue_t *_value,
+        unsigned long long _bin_time) {
+    if (_value == NULL) {
+        return -1;
+    }
+    if (_value->type == VALUE_TYPE_INVALID) {
+        _value->type = VALUE_TYPE_BINTIME;
+    }
+    if (_value->type != VALUE_TYPE_BINTIME) {
+        return -2;
+    }
+    _value->value._time = _bin_time;
+    return 0;
+}
+
+int xvalue_set_utctime(
+        xvalue_t *_value,
+        unsigned long long _utc_time) {
+    if (_value == NULL) {
+        return -1;
+    }
+    if (_value->type == VALUE_TYPE_INVALID) {
+        _value->type = VALUE_TYPE_UTCTIME;
+    }
+    if (_value->type != VALUE_TYPE_UTCTIME) {
+        return -2;
+    }
+    _value->value._time = _utc_time;
+    return 0;
+}
+
+int xvalue_set_struct(xvalue_t *_value, xlist_t *_struct) {
+    if (_value == NULL || _struct == NULL) {
+        return -1;
+    }
+    if (_value->type == VALUE_TYPE_INVALID) {
+        _value->type = VALUE_TYPE_STRUCT;
+    }
+    if (_value->type != VALUE_TYPE_STRUCT) {
+        return -2;
+    }
+    _value->value._struct = _struct;
+    return 0;
+}

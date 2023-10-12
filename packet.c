@@ -316,58 +316,52 @@ size_t var_spec_index_len(node_t *_node) {
     return variable->index.length;
 }
 
-typedef struct acsret_t {
+typedef struct udata_t {
     node_t parent;
     xvalue_t value;
-} acsret_t;
+} udata_t;
 
-static int acsret_destroy(node_t *_node) {
+static int udata_destroy(node_t *_node) {
     if (_node == NULL) {
         return 0;
     }
-    if (_node->type != NODE_TYPE_ACSRET) {
+    if (_node->type != NODE_TYPE_UDATA) {
         return -1;
     }
-    acsret_t *result = (acsret_t *) _node;
+    udata_t *result = (udata_t *) _node;
     xvalue_clear(&result->value);
     free(_node);
     _node = NULL;
     return 0;
 }
 
-node_t *acsret_create() {
+node_t *udata_create() {
     static const node_op_t nodeop = {
-            acsret_destroy,
+            udata_destroy,
     };
-    node_t *node = (node_t *) malloc(sizeof(acsret_t));
+    node_t *node = (node_t *) malloc(sizeof(udata_t));
     if (node == NULL) {
         return node;
     }
-    memset(node, 0, sizeof(acsret_t));
-    node->type = NODE_TYPE_ACSRET;
+    memset(node, 0, sizeof(udata_t));
+    node->type = NODE_TYPE_UDATA;
     node->op = &nodeop;
     return node;
 }
 
-const xvalue_t *acsret_value(
+const xvalue_t *udata_value(
         node_t *_node, const xvalue_t *_value) {
     if (_node == NULL) {
         return NULL;
     }
-    if (_node->type != NODE_TYPE_ACSRET) {
+    if (_node->type != NODE_TYPE_UDATA) {
         return NULL;
     }
-    acsret_t *result = (acsret_t *) _node;
+    udata_t *result = (udata_t *) _node;
     if (_value == NULL) {
         return &result->value;
     }
     result->value = (*_value);
     return &result->value;
 }
-
-typedef struct data_t {
-    node_t parent;
-    xvalue_t value;
-} data_t;
-
 

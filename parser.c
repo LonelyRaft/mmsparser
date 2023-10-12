@@ -435,10 +435,6 @@ static int mms_data_value(
     }
     int idx = 0;
     switch (_data[idx++]) {
-        case 0x82: {
-            idx = MMS_ERR_DATATYPE;
-            break;
-        }
         case 0x83: { // boolean
             if (_data[idx++] != 0x01) {
                 idx = MMS_ERR_LENGTH;
@@ -448,6 +444,20 @@ static int mms_data_value(
             break;
         }
         case 0x84: { // bit string
+            unsigned int length = 0;
+            int ret = mms_parse_length(_data + idx, &length);
+            if (ret <= 0) {
+                idx = MMS_ERR_LENGTH;
+                break;
+            }
+            idx += ret;
+            // bit string padding
+            if (_data[idx] >= 8) {
+                idx = MMS_ERR_LENGTH;
+                break;
+            }
+            xvalue_set_bitstr(_value, (char *) _data + idx, length);
+            idx += (int) length;
             break;
         }
         case 0x85: { // integer
@@ -501,16 +511,83 @@ static int mms_data_value(
             xvalue_set_float(_value, f_val);
             break;
         }
-        case 0x89: { // octet string
-            break;
+        case 0x89: {// octet string
+            unsigned int length = 0;
+            int ret = mms_parse_length(_data + idx, &length);
+            if (ret <= 0) {
+                idx = MMS_ERR_LENGTH;
+                break;
+            }
+            idx += ret;
+            xvalue_set_octstr(_value, (char *) _data + idx, length);
+            idx += (int) length;
         }
         case 0x8a: { // visible string
+            unsigned int length = 0;
+            int ret = mms_parse_length(_data + idx, &length);
+            if (ret <= 0) {
+                idx = MMS_ERR_LENGTH;
+                break;
+            }
+            idx += ret;
+            xvalue_set_string(_value, (char *) _data + idx, length);
+            idx += (int) length;
             break;
         }
         case 0x8c: { // binary time
+            unsigned int btsz = _data[idx++];
+            if (btsz >= sizeof(unsigned long long)) {
+                idx = MMS_ERR_LENGTH;
+                break;
+            }
+            unsigned int val_idx = 0;
+            unsigned long long bin_time = 0;
+            while (val_idx < btsz) {
+                bin_time <<= 8;
+                bin_time += _data[idx++];
+                val_idx++;
+            }
+            xvalue_set_bintime(_value, bin_time);
             break;
         }
         case 0x91: { // utc time
+            if (_data[idx++] != 0x08) {
+                idx = MMS_ERR_LENGTH;
+                break;
+            }
+            unsigned long long utc = 0;
+            unsigned int utc_idx = 0;
+            while (utc_idx < 8) {
+                utc <<= 8;
+                utc += _data[idx++];
+                utc_idx++;
+            }
+            xvalue_set_utctime(_value, utc);
+            break;
+        }
+        case 0xa2: {
+            unsigned int length = 0;
+            int ret = mms_parse_length(_data + idx, &length);
+            if (ret <= 0) {
+                idx = MMS_ERR_LENGTH;
+                break;
+            }
+            idx += ret;
+            length += idx;
+            while (idx < length) {
+                node_t *variable = udata_create();
+                if (variable == NULL) {
+
+                }
+                xvalue_t value;
+                ret = mms_data_value(_data + idx, &value);
+                if(ret <= 0){
+
+                }
+                
+
+                idx += ret;
+            }
             break;
         }
         default: {
@@ -536,7 +613,7 @@ static int mms_access_result(
             return MMS_ERR_LENGTH;
         }
         value.value._int = _data[idx++];
-        acsret_value(_acsret, &value);
+        udata_value(_acsret, &value);
         return idx;
     }
     // data value
@@ -544,7 +621,7 @@ static int mms_access_result(
     if (idx <= 0) {
         return idx;
     }
-    acsret_value(_acsret, &value);
+    udata_value(_acsret, &value);
     return idx;
 }
 
@@ -585,7 +662,7 @@ static int mms_read_response(
         return idx;
     }
     while (idx < _length) {
-        node_t *result = acsret_create();
+        node_t *result = udata_create();
         if (result == NULL) {
             break;
         }

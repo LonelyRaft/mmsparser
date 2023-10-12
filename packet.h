@@ -16,7 +16,7 @@ extern "C" {
 #define NODE_TYPE_FILESPEC (1)
 #define NODE_TYPE_DIRENTRY (2)
 #define NODE_TYPE_VARSPEC (3)
-#define NODE_TYPE_ACSRET (4)
+#define NODE_TYPE_UDATA (4)
 
 
 node_t *node_create(int _type);
@@ -58,9 +58,9 @@ const char *var_spec_index(
 
 size_t var_spec_index_len(node_t *_node);
 
-node_t *acsret_create();
+node_t *udata_create();
 
-const xvalue_t *acsret_value(
+const xvalue_t *udata_value(
         node_t *_node, const xvalue_t *_value);
 
 #ifdef __cplusplus
