@@ -346,7 +346,7 @@ node_t *acsret_create() {
     memset(node, 0, sizeof(acsret_t));
     node->type = NODE_TYPE_ACSRET;
     node->op = &nodeop;
-    return NULL;
+    return node;
 }
 
 const xvalue_t *acsret_value(
@@ -364,5 +364,10 @@ const xvalue_t *acsret_value(
     result->value = (*_value);
     return &result->value;
 }
+
+typedef struct data_t {
+    node_t parent;
+    xvalue_t value;
+} data_t;
 
 

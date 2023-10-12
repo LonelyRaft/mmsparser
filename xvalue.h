@@ -47,6 +47,7 @@ typedef struct xstruct_t {
 typedef struct xvalue_t {
     int type;
     union val_data {
+        unsigned char _bool;
         char _char;
         unsigned char _uchar;
         short _short;
@@ -65,6 +66,14 @@ typedef struct xvalue_t {
 int xvalue_clear(xvalue_t *_value);
 
 int xvalue_to_string(const xvalue_t *_value, char *_dest);
+
+int xvalue_set_bool(xvalue_t *_value, unsigned char _val);
+
+int xvalue_set_float(xvalue_t *_value, float _val);
+
+int xvalue_set_int(xvalue_t *_value, int _val);
+
+int xvalue_set_uint(xvalue_t *_value, unsigned int _val);
 
 #ifdef __cplusplus
 }

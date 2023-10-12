@@ -6,13 +6,14 @@
 #define MMS_ERR_NULL (-1)
 #define MMS_ERR_FLAG (-2)
 #define MMS_ERR_LENGTH (-3)
+#define MMS_ERR_DATATYPE (-4)
 
 #define MMS_DIR_UP (0xa0)
 #define MMS_DIR_DOWN (0xa1)
 #define MMS_INVOKE_ID (0x02)
 
 #define MMS_SERVICE_FILE (0x4d)
-#define MMS_SERVICE_WRITE (0x00)
+#define MMS_SERVICE_WRITE (0xa5)
 #define MMS_SERVICE_READ (0xa4)
 
 // 解析报文长度
@@ -426,36 +427,78 @@ static int mms_read_request(
     return idx;
 }
 
-static int mms_access_result(
+static int mms_data_value(
         const unsigned char *_data,
-        node_t *_acsret) {
-    if (_data == NULL || _acsret == NULL) {
-        return MMS_ERR_NULL;
+        xvalue_t *_value) {
+    if (_data == NULL || _value == NULL) {
+        return -1;
     }
     int idx = 0;
     switch (_data[idx++]) {
-        case 0x80: { // error code
-
-
-
-            break;
-        }
-        case 0x82: { // struct
+        case 0x82: {
+            idx = MMS_ERR_DATATYPE;
             break;
         }
         case 0x83: { // boolean
+            if (_data[idx++] != 0x01) {
+                idx = MMS_ERR_LENGTH;
+                break;
+            }
+            xvalue_set_bool(_value, _data[idx++]);
             break;
         }
         case 0x84: { // bit string
             break;
         }
         case 0x85: { // integer
+            unsigned int intsz = _data[idx++];
+            if (intsz > sizeof(int)) {
+                idx = MMS_ERR_LENGTH;
+                break;
+            }
+            int i_val = 0;
+            unsigned int byte_idx = 0;
+            while (byte_idx < intsz) {
+                i_val <<= 8;
+                i_val += _data[idx++];
+                byte_idx++;
+            }
+            xvalue_set_int(_value, i_val);
             break;
         }
         case 0x86: { // unsigned integer
+            unsigned int intsz = _data[idx++];
+            if (intsz > sizeof(unsigned int)) {
+                idx = MMS_ERR_LENGTH;
+                break;
+            }
+            unsigned int ui_val = 0;
+            unsigned int byte_idx = 0;
+            while (byte_idx < intsz) {
+                ui_val <<= 8;
+                ui_val += _data[idx++];
+                byte_idx++;
+            }
+            xvalue_set_uint(_value, ui_val);
             break;
         }
         case 0x87: { // float point
+            if (_data[idx++] != 0x05) {
+                idx = MMS_ERR_LENGTH;
+                break;
+            }
+            if (_data[idx++] != 0x08) {
+                idx = MMS_ERR_FLAG;
+                break;
+            }
+            float f_val;
+            unsigned char tmpdata[4] = {0};
+            tmpdata[3] = _data[idx++];
+            tmpdata[2] = _data[idx++];
+            tmpdata[1] = _data[idx++];
+            tmpdata[0] = _data[idx++];
+            memcpy(&f_val, tmpdata, 4);
+            xvalue_set_float(_value, f_val);
             break;
         }
         case 0x89: { // octet string
@@ -470,13 +513,42 @@ static int mms_access_result(
         case 0x91: { // utc time
             break;
         }
-        default: { // unknown data type
+        default: {
+            idx = MMS_ERR_DATATYPE;
             break;
         }
     }
     return idx;
 }
 
+static int mms_access_result(
+        const unsigned char *_data,
+        node_t *_acsret) {
+    if (_data == NULL || _acsret == NULL) {
+        return MMS_ERR_NULL;
+    }
+    int idx = 0;
+    xvalue_t value;
+    memset(&value, 0, sizeof(xvalue_t));
+    if (_data[idx] == 0x80) { // error code
+        idx++;
+        if (_data[idx++] != 0x01) {
+            return MMS_ERR_LENGTH;
+        }
+        value.value._int = _data[idx++];
+        acsret_value(_acsret, &value);
+        return idx;
+    }
+    // data value
+    idx = mms_data_value(_data + idx, &value);
+    if (idx <= 0) {
+        return idx;
+    }
+    acsret_value(_acsret, &value);
+    return idx;
+}
+
+// 解析读服务响应
 static int mms_read_response(
         const unsigned char *_data,
         size_t _length) {
@@ -484,7 +556,30 @@ static int mms_read_response(
         return -1;
     }
     int idx = 0;
-    int ret = 0;
+    if (_data[idx++] != MMS_SERVICE_READ) {
+        return MMS_ERR_FLAG;
+    }
+    unsigned int length = 0;
+    int ret = mms_parse_length(_data + idx, &length);
+    if (ret <= 0) {
+        return MMS_ERR_LENGTH;
+    }
+    idx += ret;
+    if (length != (_length - idx)) {
+        return MMS_ERR_LENGTH;
+    }
+    // read service response data flag
+    if (_data[idx++] != 0xa1) {
+        return MMS_ERR_FLAG;
+    }
+    ret = mms_parse_length(_data + idx, &length);
+    if (ret <= 0) {
+        return MMS_ERR_LENGTH;
+    }
+    idx += ret;
+    if (length != (_length - idx)) {
+        return MMS_ERR_LENGTH;
+    }
     xlist_t *list = xlist_create();
     if (list == NULL) {
         return idx;
@@ -505,6 +600,43 @@ static int mms_read_response(
     if (xlist_count(list) == 0) {
         xlist_destroy(list);
         list = NULL;
+    }
+    return idx;
+}
+
+static int mms_write_request(
+        const unsigned char *_data,
+        size_t _length) {
+    if (_data == NULL || _length == 0) {
+        return MMS_ERR_NULL;
+    }
+    int idx = 0;
+    if (_data[idx++] != MMS_SERVICE_WRITE) {
+        return MMS_ERR_FLAG;
+    }
+    unsigned int length = 0;
+    int ret = mms_parse_length(_data + idx, &length);
+    if (ret <= 0) {
+        return MMS_ERR_LENGTH;
+    }
+    idx += ret;
+    if (length >= (_length - idx) ||
+        _data[idx + length] != 0xa0) {
+        return MMS_ERR_LENGTH;
+    }
+
+    return idx;
+}
+
+static int mms_write_response(
+        const unsigned char *_data,
+        size_t _length) {
+    if (_data == NULL || _length == 0) {
+        return MMS_ERR_NULL;
+    }
+    int idx = 0;
+    if (_data[idx++] != MMS_SERVICE_WRITE) {
+        return MMS_ERR_FLAG;
     }
     return idx;
 }
@@ -554,6 +686,10 @@ int mms_parse(const unsigned char *_data, size_t _length) {
                 mms_read_request(_data + idx, _length - idx);
                 break;
             }
+            case MMS_SERVICE_WRITE: {
+                mms_write_request(_data + idx, _length - idx);
+                break;
+            }
             default: {
                 break;
             }
@@ -582,9 +718,15 @@ int mms_parse(const unsigned char *_data, size_t _length) {
                 if (_data[idx + 1] == MMS_SERVICE_FILE) {
                     mms_file_dir_response(_data + idx, _length - idx);
                 }
+                break;
             }
             case MMS_SERVICE_READ: {
-                mms_file_dir_response(_data + idx, _length - idx);
+                mms_read_response(_data + idx, _length - idx);
+                break;
+            }
+            case MMS_SERVICE_WRITE: {
+                mms_write_response(_data + idx, _length - idx);
+                break;
             }
             default: {
                 break;

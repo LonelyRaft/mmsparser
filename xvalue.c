@@ -38,22 +38,21 @@ const char *mmsstr_set_data(
     return dest;
 }
 
-const char* mmsstr_data(mmsstr_t* _str)
-{
-    if(_str == NULL){
+const char *mmsstr_data(mmsstr_t *_str) {
+    if (_str == NULL) {
         return NULL;
     }
-    if(_str->length >= STRING_SHORT_SIZE){
+    if (_str->length >= STRING_SHORT_SIZE) {
         return _str->data.long_str;
     }
     return _str->data.short_str;
 }
 
 void mmsstr_clear(mmsstr_t *_str) {
-    if(_str == NULL){
+    if (_str == NULL) {
         return;
     }
-    if(_str->length >= STRING_SHORT_SIZE) {
+    if (_str->length >= STRING_SHORT_SIZE) {
         free(_str->data.long_str);
         _str->data.long_str = NULL;
     }
@@ -102,3 +101,58 @@ int xvalue_to_string(const xvalue_t *_value, char *_dest) {
     return length;
 }
 
+int xvalue_set_bool(xvalue_t *_value, unsigned char _val) {
+    if (_value == NULL) {
+        return -1;
+    }
+    if (_value->type == VALUE_TYPE_INVALID) {
+        _value->type = VALUE_TYPE_BOOL;
+    }
+    if (_value->type != VALUE_TYPE_BOOL) {
+        return -2;
+    }
+    _value->value._bool = _val;
+    return 0;
+}
+
+int xvalue_set_float(xvalue_t *_value, float _val) {
+    if (_value == NULL) {
+        return -1;
+    }
+    if (_value->type == VALUE_TYPE_INVALID) {
+        _value->type = VALUE_TYPE_FLOAT;
+    }
+    if (_value->type != VALUE_TYPE_FLOAT) {
+        return -2;
+    }
+    _value->value._float = _val;
+    return 0;
+}
+
+int xvalue_set_int(xvalue_t *_value, int _val) {
+    if (_value == NULL) {
+        return -1;
+    }
+    if (_value->type == VALUE_TYPE_INVALID) {
+        _value->type = VALUE_TYPE_INT;
+    }
+    if (_value->type != VALUE_TYPE_INT) {
+        return -2;
+    }
+    _value->value._int = _val;
+    return 0;
+}
+
+int xvalue_set_uint(xvalue_t *_value, unsigned int _val) {
+    if (_value == NULL) {
+        return -1;
+    }
+    if (_value->type == VALUE_TYPE_INVALID) {
+        _value->type = VALUE_TYPE_UINT;
+    }
+    if (_value->type != VALUE_TYPE_UINT) {
+        return -2;
+    }
+    _value->value._uint = _val;
+    return 0;
+}

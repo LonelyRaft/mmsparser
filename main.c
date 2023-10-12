@@ -34,18 +34,17 @@ static int make_msg(unsigned char *buffer, int length) {
     return writ;
 }
 
-static int read_msg(const char *_path, unsigned char* buffer, int size)
-{
-    if(_path == NULL || buffer == NULL){
+static int read_msg(const char *_path, unsigned char *buffer, int size) {
+    if (_path == NULL || buffer == NULL) {
         return 0;
     }
     FILE *data = fopen(_path, "rb");
-    if(data == NULL){
+    if (data == NULL) {
         return -1;
     }
     int length = (int) fread(buffer, 1, size, data);
     fclose(data);
-    if(length > 0) {
+    if (length > 0) {
         length = make_msg(buffer, length);
     }
     return length;
@@ -57,8 +56,8 @@ int main(int argc, char *argv[]) {
     if (buffer == NULL) {
         return -1;
     }
-    int  length = read_msg("../message.txt", buffer, 10240);
-    if(length > 0) {
+    int length = read_msg("../message.txt", buffer, 10240);
+    if (length > 0) {
         mms_parse(buffer, length);
     }
     return 0;
