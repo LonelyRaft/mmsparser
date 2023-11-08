@@ -6,7 +6,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif // __cplusplus
+#endif  // __cplusplus
 
 typedef struct node_t node_t;
 
@@ -40,7 +40,6 @@ node_t *xlist_remove_head(xlist_t *_list);
 
 #ifdef __cplusplus
 }
-#endif // __cplusplus
+#endif  // __cplusplus
 
-#endif // !X_LIST_H
-
+#endif  // !X_LIST_H

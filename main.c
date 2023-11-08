@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "parser.h"
 
 static int make_msg(unsigned char *buffer, int length) {
@@ -34,31 +35,35 @@ static int make_msg(unsigned char *buffer, int length) {
     return writ;
 }
 
-static int read_msg(const char *_path, unsigned char *buffer, int size) {
-    if (_path == NULL || buffer == NULL) {
-        return 0;
-    }
-    FILE *data = fopen(_path, "rb");
-    if (data == NULL) {
-        return -1;
-    }
-    int length = (int) fread(buffer, 1, size, data);
-    fclose(data);
-    if (length > 0) {
-        length = make_msg(buffer, length);
-    }
-    return length;
-}
-
-
 int main(int argc, char *argv[]) {
-    unsigned char *buffer = (unsigned char *) malloc(10240);
+    unsigned char *buffer =
+            (unsigned char *) malloc(1024 * 56);
     if (buffer == NULL) {
         return -1;
     }
-    int length = read_msg("../message.txt", buffer, 10240);
-    if (length > 0) {
-        mms_parse(buffer, length);
+    FILE *data = fopen("../message.txt", "rb");
+    if (data == NULL) {
+        return -2;
     }
+    int length;
+    do {
+        length = fscanf(data, " %[^\n]", buffer);
+        if (length > 0 && buffer[0] == '#') {
+            printf("%s\n", (char *) buffer);
+            continue;
+        }
+        if (length > 0) {
+            length = (int) strlen((char *) buffer);
+            length = make_msg(buffer, length);
+            service_t *service = mms_parse(buffer, length);
+            length = mms_tostring(
+                    service, (char *) buffer, 10240);
+            if (length > 0) {
+                printf("%s\n", buffer);
+            }
+            mms_destroy(service);
+        }
+    } while (length >= 0);
+    fclose(data);
     return 0;
 }

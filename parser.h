@@ -6,28 +6,20 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif // __cplusplus
+#endif  // __cplusplus
 
-typedef struct resp_t {
-    unsigned int invoke;
-    unsigned int type;
-    xlist_t *list;
-} resp_t;
+typedef struct service_t service_t;
 
-typedef struct request_t
-{
-    unsigned int invoke;
-    unsigned int type;
-    xlist_t *list;
-}request_t;
+const char *error_tostring(int _error);
 
-int mms_parse(const unsigned char *_data, size_t _length);
+service_t *mms_parse(const unsigned char *_data, size_t _length);
 
+int mms_tostring(const service_t *_serice, char *_dest, size_t _size);
+
+int mms_destroy(service_t *_service);
 
 #ifdef __cplusplus
 }
-#endif // __cplusplus
+#endif  // __cplusplus
 
-
-#endif // !MMS_PARSER_H
-
+#endif  // !MMS_PARSER_H
